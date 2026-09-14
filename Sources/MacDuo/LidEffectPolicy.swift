@@ -54,14 +54,24 @@ struct LidEffectPolicy {
     let hysteresis: Double
 
     /// A lid held at or above this angle has been opened again, even when
-    /// threshold + hysteresis is past what the hinge can reach.
-    var dwellAngle: Double { threshold + min(hysteresis, 1) }
+    /// threshold + hysteresis is past what the hinge can reach. The threshold
+    /// itself, so a hinge whose limit rounds to the threshold still releases.
+    var dwellAngle: Double { threshold }
+
+    /// How far the lid must have risen above its lowest reading of the run
+    /// before opening speed alone releases the effect. A sensor that reports
+    /// whole degrees moves in 1° steps, and one step over a sensor refresh
+    /// already reads as fast opening. A lid resting on a half-degree boundary
+    /// alternates between two readings, and this keeps that from flapping the
+    /// effect on and off.
+    static let minimumReleaseRise: Double = 1.5
 
     func wantsEffect(
         isEnabled: Bool,
         isActive: Bool,
         angle: Double,
         predictedAngle: Double,
+        riseSinceLowest: Double,
         hasBeenAboveThreshold: Bool,
         wasClosingRecently: Bool,
         isClearlyOpening: Bool,
@@ -73,8 +83,11 @@ struct LidEffectPolicy {
         if isActive {
             // Deliberately opening back across the configured start angle is
             // sufficient to recover even when threshold + hysteresis cannot
-            // be reached by the hardware.
-            if isClearlyOpening, angle >= threshold { return false }
+            // be reached by the hardware. The rise rules out a single
+            // whole-degree step; a smaller opening releases through the dwell.
+            if isClearlyOpening, angle >= threshold, riseSinceLowest >= Self.minimumReleaseRise {
+                return false
+            }
 
             // An opening slower than that still ends with the lid held above
             // the start angle, which releases it too.

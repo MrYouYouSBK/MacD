@@ -50,6 +50,7 @@ struct LidEffectPolicyTests {
                 isActive: false,
                 angle: 129.9,
                 predictedAngle: 129.9,
+                riseSinceLowest: 0,
                 hasBeenAboveThreshold: true,
                 wasClosingRecently: intent.wasClosingRecently(at: 10.3, memoryDuration: 1.5),
                 isClearlyOpening: false,
@@ -67,6 +68,7 @@ struct LidEffectPolicyTests {
                 isActive: false,
                 angle: 129,
                 predictedAngle: 129,
+                riseSinceLowest: 0,
                 hasBeenAboveThreshold: true,
                 wasClosingRecently: false,
                 isClearlyOpening: false,
@@ -83,23 +85,50 @@ struct LidEffectPolicyTests {
     }
 
     @Test
+    func testDwellAngleIsTheThreshold() {
+        // A hinge whose limit rounds to the threshold must still release.
+        #expect(highThreshold.dwellAngle == 130)
+    }
+
+    @Test
     func testDwellRestartsWhenLidDropsBelowDwellAngle() {
         let dwellAngle = highThreshold.dwellAngle
         var dwell = LidOpenDwell()
-        dwell.update(angle: 131, at: 10, dwellAngle: dwellAngle)
+        dwell.update(angle: 130, at: 10, dwellAngle: dwellAngle)
         #expect(!dwell.hasDwelled(at: 10.5, duration: 1))
         #expect(dwell.hasDwelled(at: 11, duration: 1))
 
-        // Jitter back toward the start angle restarts the wait.
-        dwell.update(angle: 130.5, at: 11.1, dwellAngle: dwellAngle)
-        dwell.update(angle: 131, at: 11.2, dwellAngle: dwellAngle)
+        // Jitter back below the start angle restarts the wait.
+        dwell.update(angle: 129.5, at: 11.1, dwellAngle: dwellAngle)
+        dwell.update(angle: 130, at: 11.2, dwellAngle: dwellAngle)
         #expect(!dwell.hasDwelled(at: 12, duration: 1))
+    }
+
+    @Test
+    func testOneWholeDegreeStepDoesNotReleaseOnOpening() {
+        // A whole-degree sensor resting on a half-degree boundary alternates
+        // 129/130. The step reads as fast opening, but the rise is only 1°.
+        #expect(activeEffect(angle: 130, opening: true, rise: 1))
+        #expect(activeEffect(angle: 130, opening: true, rise: 1, minimumDurationElapsed: false))
+    }
+
+    @Test
+    func testRiseAboveOneStepReleasesOnOpening() {
+        #expect(!activeEffect(angle: 130, opening: true, rise: LidEffectPolicy.minimumReleaseRise))
+        #expect(!activeEffect(angle: 130.9, opening: true, rise: 70))
+    }
+
+    @Test
+    func testSmallOpeningStillReleasesThroughDwell() {
+        // Too small a rise for the speed release, but held above the threshold.
+        #expect(!activeEffect(angle: 130, opening: false, dwelled: true, rise: 1))
     }
 
     private func activeEffect(
         angle: Double,
         opening: Bool,
         dwelled: Bool = false,
+        rise: Double = 40,
         minimumDurationElapsed: Bool = true
     ) -> Bool {
         wantsActiveEffect(
@@ -107,6 +136,7 @@ struct LidEffectPolicyTests {
             angle: angle,
             opening: opening,
             dwelled: dwelled,
+            rise: rise,
             minimumDurationElapsed: minimumDurationElapsed
         )
     }
@@ -116,6 +146,7 @@ struct LidEffectPolicyTests {
         angle: Double,
         opening: Bool,
         dwelled: Bool = false,
+        rise: Double = 40,
         minimumDurationElapsed: Bool = true
     ) -> Bool {
         policy.wantsEffect(
@@ -123,6 +154,7 @@ struct LidEffectPolicyTests {
             isActive: true,
             angle: angle,
             predictedAngle: angle,
+            riseSinceLowest: rise,
             hasBeenAboveThreshold: true,
             wasClosingRecently: false,
             isClearlyOpening: opening,

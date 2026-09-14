@@ -66,6 +66,9 @@ final class LidController: ObservableObject {
     private var closingOutStartedAt: CFTimeInterval = 0
     private var builtInLayout = Layout()
     private var peakAngle: Double = 0
+    /// The lowest reading since the effect started. Opening releases only
+    /// once the lid has risen `LidEffectPolicy.minimumReleaseRise` above it.
+    private var lowestRunAngle: Double = 0
 
     private static let idlePollInterval: TimeInterval = 1.0 / 8
     private static let activePollInterval: TimeInterval = 1.0 / 30
@@ -274,6 +277,7 @@ final class LidController: ObservableObject {
 
         rawAngle = angle
         peakAngle = max(peakAngle, angle)
+        if isActive { lowestRunAngle = min(lowestRunAngle, angle) }
         publish(angle: angle)
 
         if preferences.isEnabled {
@@ -319,6 +323,7 @@ final class LidController: ObservableObject {
             isActive: isActive,
             angle: angle,
             predictedAngle: predictedAngle(),
+            riseSinceLowest: angle - lowestRunAngle,
             hasBeenAboveThreshold: peakAngle >= threshold,
             wasClosingRecently: motionIntent.wasClosingRecently(
                 at: now,
@@ -454,6 +459,7 @@ final class LidController: ObservableObject {
         isActive = active
         if active {
             peakAngle = rawAngle
+            lowestRunAngle = rawAngle
             openDwell.reset()
             isClosingOut = false
             startedAt = CACurrentMediaTime()
