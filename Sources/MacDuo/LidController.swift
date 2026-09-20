@@ -21,6 +21,7 @@ final class LidController: ObservableObject {
     @Published private(set) var currentAngle: Double = 0
     @Published private(set) var isSensorAvailable = false
     @Published private(set) var isActive = false
+    @Published private(set) var interactionState: LidInteractionState = .unavailable
 
     let snapshotter = ScreenSnapshotter()
 
@@ -151,12 +152,16 @@ final class LidController: ObservableObject {
 
     func start() {
         isSensorAvailable = sensor.isAvailable
-        guard isSensorAvailable else { return }
+        guard isSensorAvailable else {
+            interactionState = .unavailable
+            return
+        }
 
         if let angle = sensor.angle() {
             rawAngle = angle
             currentAngle = angle
             visualAngle.reset(to: angle)
+            updateInteractionState(angle: angle)
         }
         // Before the first poll, which reads it.
         builtInLayout = Layout(displayID: NSScreen.builtIn?.displayID, frame: NSScreen.builtIn?.frame)
@@ -282,8 +287,11 @@ final class LidController: ObservableObject {
 
         if preferences.isEnabled {
             updateVelocity(with: angle)
+            updateInteractionState(angle: angle)
             openDwell.update(angle: angle, at: CACurrentMediaTime(), dwellAngle: effectPolicy.dwellAngle)
             reconcile(angle: angle)
+        } else {
+            updateInteractionState(angle: angle)
         }
 
         let prewarmZone = preferences.thresholdAngle + preferences.prewarmCeiling
@@ -413,6 +421,20 @@ final class LidController: ObservableObject {
             lastClosingTime = -.greatestFiniteMagnitude
         } else if angularVelocity <= -preferences.closingSpeed {
             lastClosingTime = now
+        }
+    }
+
+    private func updateInteractionState(angle: Double) {
+        let next = LidInteractionEngine.classify(
+            isSensorAvailable: isSensorAvailable,
+            angle: angle,
+            angularVelocity: angularVelocity,
+            openThreshold: preferences.thresholdAngle,
+            closingSpeed: Self.triggerClosingSpeed,
+            openingSpeed: Self.triggerOpeningSpeed
+        )
+        if next != interactionState {
+            interactionState = next
         }
     }
 
