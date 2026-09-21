@@ -14,7 +14,7 @@
 - [ ] Visual profile.
 - [ ] Privacy profile.
 - [ ] Presentation profile.
-- [ ] Opt-in gesture engine with velocity/hysteresis/debounce safety.
+- [~] Opt-in gesture engine — safe quick-close/open and hold events with velocity/debounce implemented; user profile/action mapping remains.
 - [ ] Profile switching.
 
 ## Exit gate
