@@ -42,6 +42,7 @@ struct SettingsView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 10) {
                         switches
+                        profileGroup
                         if !hasScreenPermission {
                             permissionNotice
                         }
@@ -102,6 +103,44 @@ struct SettingsView: View {
                 help: localized("Off holds the frame from when the effect started.")
             )
             .disabled(!preferences.isEnabled)
+        }
+    }
+
+    private var profileGroup: some View {
+        group(localized("Interaction profile")) {
+            HStack {
+                Text(localized("Profile"))
+                Spacer()
+                Picker("", selection: $preferences.interactionProfile) {
+                    ForEach(MacDProfile.allCases) { profile in
+                        Text(profile.title).tag(profile)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .controlSize(.small)
+                .fixedSize()
+                .accessibilityLabel(localized("Interaction profile"))
+            }
+            Text(profileDescription)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var profileDescription: String {
+        switch preferences.interactionProfile {
+        case .defaultProfile:
+            localized("Visual depth effect only. Gesture routing stays off.")
+        case .focus:
+            localized("Gesture events are available for future focus actions.")
+        case .presentation:
+            localized("Gesture events and presentation intent are enabled.")
+        case .privacy:
+            localized("Gesture events and privacy intent are enabled.")
+        case .custom:
+            localized("Custom profile for user-defined interaction mapping.")
         }
     }
 
