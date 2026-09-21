@@ -15,7 +15,7 @@
 - [ ] Privacy profile.
 - [ ] Presentation profile.
 - [~] Opt-in gesture engine — safe quick-close/open and hold events with velocity/debounce implemented; user profile/action mapping remains.
-- [ ] Profile switching.
+- [~] Profile switching — Default/Focus/Presentation/Privacy/Custom are persisted and selectable; profile-to-action routing remains.
 
 ## Exit gate
 Foundation is complete only when hardware state, interaction policy and Metal rendering are cleanly separated and Project S owns release identity.
