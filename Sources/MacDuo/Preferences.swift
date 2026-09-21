@@ -19,11 +19,12 @@ final class Preferences: ObservableObject {
         static let dimReach = "dimReach"
         static let showsAngleInMenuBar = "showsAngleInMenuBar"
         static let isLivePicture = "isLivePicture"
+        static let interactionProfile = "interactionProfile"
 
         static let all = [
             isEnabled, isTimeoutEnabled, thresholdAngle, blurSpan, maxBlurRadius,
             maxDim, viewingDistance, recession, blurEvenness, dimReach,
-            showsAngleInMenuBar, isLivePicture,
+            showsAngleInMenuBar, isLivePicture, interactionProfile,
         ]
     }
 
@@ -40,6 +41,7 @@ final class Preferences: ObservableObject {
         Key.dimReach: 0.5,
         Key.showsAngleInMenuBar: false,
         Key.isLivePicture: true,
+        Key.interactionProfile: MacDProfile.defaultProfile.rawValue,
     ]
 
     /// Master switch for the depth effect.
@@ -108,6 +110,12 @@ final class Preferences: ObservableObject {
         didSet { defaults.set(isLivePicture, forKey: Key.isLivePicture) }
     }
 
+    /// Product-level interaction policy. Profiles do not execute system actions
+    /// by themselves; they only select which intent/event routes may be used.
+    @Published var interactionProfile: MacDProfile {
+        didSet { defaults.set(interactionProfile.rawValue, forKey: Key.interactionProfile) }
+    }
+
     /// Eye distance in screen heights, at the two ends of the perspective
     /// slider. The panel offers the strength, which runs the other way.
     static let farthestEye: Double = 6
@@ -154,6 +162,9 @@ final class Preferences: ObservableObject {
         dimReach = defaults.double(forKey: Key.dimReach)
         showsAngleInMenuBar = defaults.bool(forKey: Key.showsAngleInMenuBar)
         isLivePicture = defaults.bool(forKey: Key.isLivePicture)
+        interactionProfile = MacDProfile(
+            rawValue: defaults.string(forKey: Key.interactionProfile) ?? ""
+        ) ?? .defaultProfile
     }
 
     func resetToDefaults() {
@@ -172,5 +183,8 @@ final class Preferences: ObservableObject {
         dimReach = defaults.double(forKey: Key.dimReach)
         showsAngleInMenuBar = defaults.bool(forKey: Key.showsAngleInMenuBar)
         isLivePicture = defaults.bool(forKey: Key.isLivePicture)
+        interactionProfile = MacDProfile(
+            rawValue: defaults.string(forKey: Key.interactionProfile) ?? ""
+        ) ?? .defaultProfile
     }
 }
