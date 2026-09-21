@@ -26,6 +26,16 @@ struct LidGestureDetector {
     private var holdEmitted = false
     private var lastEventTime: TimeInterval = -.greatestFiniteMagnitude
 
+    init(
+        quickVelocity: Double = 45,
+        holdDuration: TimeInterval = 0.8,
+        debounceDuration: TimeInterval = 0.9
+    ) {
+        self.quickVelocity = quickVelocity
+        self.holdDuration = holdDuration
+        self.debounceDuration = debounceDuration
+    }
+
     mutating func reset() {
         quickCloseLatched = false
         quickOpenLatched = false
