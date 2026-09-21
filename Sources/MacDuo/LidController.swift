@@ -22,6 +22,7 @@ final class LidController: ObservableObject {
     @Published private(set) var isSensorAvailable = false
     @Published private(set) var isActive = false
     @Published private(set) var interactionState: LidInteractionState = .unavailable
+    @Published private(set) var lastGestureEvent: LidGestureEvent?
 
     let snapshotter = ScreenSnapshotter()
 
@@ -52,6 +53,7 @@ final class LidController: ObservableObject {
     private var isCapturePending = false
     private var motionIntent = LidMotionIntent()
     private var openDwell = LidOpenDwell()
+    private var gestureDetector = LidGestureDetector()
     /// Where the lid last moved to by more than `timeoutMovementThreshold`,
     /// and when. The timeout counts from there.
     private var timeoutReferenceAngle: Double?
@@ -212,6 +214,8 @@ final class LidController: ObservableObject {
         lastClosingTime = -.greatestFiniteMagnitude
         motionIntent.reset()
         openDwell.reset()
+        gestureDetector.reset()
+        lastGestureEvent = nil
         peakAngle = 0
         if pollTimer != nil { setPollInterval(Self.idlePollInterval) }
     }
@@ -435,6 +439,15 @@ final class LidController: ObservableObject {
         )
         if next != interactionState {
             interactionState = next
+        }
+
+        if let event = gestureDetector.update(
+            state: next,
+            angle: angle,
+            angularVelocity: angularVelocity,
+            at: CACurrentMediaTime()
+        ) {
+            lastGestureEvent = event
         }
     }
 
@@ -742,6 +755,8 @@ final class LidController: ObservableObject {
         lastClosingTime = -.greatestFiniteMagnitude
         motionIntent.reset()
         openDwell.reset()
+        gestureDetector.reset()
+        lastGestureEvent = nil
         peakAngle = 0
         timeoutReferenceAngle = nil
         timeoutAwaitingRelease = false
